@@ -252,7 +252,10 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
         }
 
         return {
-          provider: new EthProvider({ chains, connector })
+          provider: new EthProvider({ chains, connector }),
+          instance: {
+            uri: connector.signer && connector.signer.uri
+          }
         }
       }
     }
