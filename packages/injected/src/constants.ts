@@ -5,6 +5,7 @@ export const WALLET_NAMES: { [key: string]: string } = {
   alphawallet: 'AlphaWallet',
   apexwallet: 'Apex Wallet',
   atoken: 'AToken',
+  backpack: 'Backpack',
   bifrostwallet: 'Bifrost Wallet',
   binance: 'Binance Chain Wallet',
   bitpie: 'Bitpie',

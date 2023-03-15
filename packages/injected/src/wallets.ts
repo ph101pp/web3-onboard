@@ -297,6 +297,17 @@ const atoken: InjectedWalletModule = {
   platforms: ['mobile']
 }
 
+
+const backpack: InjectedWalletModule = {
+  label: ProviderLabel.Backpack,
+  injectedNamespace: InjectedNameSpace.Ethereum,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider && !!provider[ProviderIdentityFlag.Backpack],
+  getIcon: async () => (await import('./icons/backpack.js')).default,
+  getInterface: getInjectedInterface(ProviderIdentityFlag.Backpack),
+  platforms: ['desktop', 'mobile', 'Chrome', 'Chromium']
+}
+
 const bifrostwallet: InjectedWalletModule = {
   label: ProviderLabel.BifrostWallet,
   injectedNamespace: InjectedNameSpace.Ethereum,
@@ -752,6 +763,7 @@ const wallets = [
   exodus,
   frontier,
   metamask,
+  backpack,
   bifrostwallet,
   binance,
   coinbase,
