@@ -9,7 +9,8 @@ import {
   chainNamespaceValidation,
   chainIdValidation,
   chainValidation,
-  validate
+  validate,
+  AppMetadata
 } from '@web3-onboard/common'
 
 import type {
@@ -61,11 +62,20 @@ const balance = Joi.any().allow(
   null
 )
 
+const secondaryTokens = Joi.any().allow(
+  Joi.object({
+    balance: Joi.string().required(),
+    icon: Joi.string()
+  }),
+  null
+)
+
 const account = Joi.object({
   address: Joi.string().required(),
   ens,
   uns,
-  balance
+  balance,
+  secondaryTokens
 })
 
 const chains = Joi.array()
@@ -119,6 +129,19 @@ const appMetadata = Joi.object({
   agreement
 })
 
+const appMetadataUpdate = Joi.object({
+  name: Joi.string(),
+  description: Joi.string(),
+  icon: Joi.string(),
+  logo: Joi.string(),
+  gettingStartedGuide: Joi.string(),
+  email: Joi.string(),
+  appUrl: Joi.string(),
+  explore: Joi.string(),
+  recommendedInjectedWallets: Joi.array().items(recommendedWallet),
+  agreement
+})
+
 const walletModule = Joi.object({
   label: Joi.string().required(),
   getInfo: Joi.function().arity(1).required(),
@@ -159,7 +182,8 @@ const accountCenterInitOptions = Joi.object({
   enabled: Joi.boolean(),
   position: commonPositions,
   minimal: Joi.boolean(),
-  containerElement: Joi.string()
+  containerElement: Joi.string(),
+  hideTransactionProtectionBtn: Joi.boolean()
 })
 
 const accountCenter = Joi.object({
@@ -167,6 +191,7 @@ const accountCenter = Joi.object({
   position: commonPositions,
   expanded: Joi.boolean(),
   minimal: Joi.boolean(),
+  hideTransactionProtectionBtn: Joi.boolean(),
   containerElement: Joi.string()
 })
 
@@ -174,7 +199,9 @@ const connectModalOptions = Joi.object({
   showSidebar: Joi.boolean(),
   disableClose: Joi.boolean(),
   autoConnectLastWallet: Joi.boolean(),
+  autoConnectAllPreviousWallet: Joi.boolean(),
   iDontHaveAWalletLink: Joi.string(),
+  wheresMyWalletLink: Joi.string(),
   disableUDResolution: Joi.boolean()
 })
 
@@ -185,6 +212,7 @@ const containerElements = Joi.object({
 
 const themeMap = Joi.object({
   '--w3o-background-color': Joi.string(),
+  '--w3o-font-family': Joi.string(),
   '--w3o-foreground-color': Joi.string(),
   '--w3o-text-color': Joi.string(),
   '--w3o-border-color': Joi.string(),
@@ -204,7 +232,8 @@ const initOptions = Joi.object({
   apiKey: Joi.string(),
   accountCenter: Joi.object({
     desktop: accountCenterInitOptions,
-    mobile: accountCenterInitOptions
+    mobile: accountCenterInitOptions,
+    hideTransactionProtectionBtn: Joi.boolean()
   }),
   notify: [notifyOptions, notify],
   gas: Joi.object({
@@ -218,7 +247,9 @@ const initOptions = Joi.object({
     init: Joi.function().required(),
     previewTransaction: Joi.function()
   }),
-  theme: theme
+  theme: theme,
+  disableFontDownload: Joi.boolean(),
+  unstoppableResolution: Joi.function()
 })
 
 const connectOptions = Joi.object({
@@ -230,17 +261,26 @@ const connectOptions = Joi.object({
       }),
       Joi.string()
     )
-    .required()
 })
 
 const disconnectOptions = Joi.object({
   label: Joi.string().required()
 }).required()
 
+const secondaryTokenValidation = Joi.object({
+  address: Joi.string().required(),
+  icon: Joi.string().optional()
+})
+
 const setChainOptions = Joi.object({
   chainId: chainIdValidation.required(),
   chainNamespace: chainNamespaceValidation,
-  wallet: Joi.string()
+  wallet: Joi.string(),
+  rpcUrl: Joi.string(),
+  label: Joi.string(),
+  token: Joi.string(),
+  protectedRpcUrl: Joi.string(),
+  secondaryTokens: Joi.array().max(5).items(secondaryTokenValidation).optional()
 })
 
 const customNotificationUpdate = Joi.object({
@@ -335,6 +375,9 @@ export function validateSetChainOptions(data: {
   chainId: ChainId | DecimalChainId
   chainNamespace?: string
   wallet?: WalletState['label']
+  rpcUrl?: string
+  label?: string
+  token?: string
 }): ValidateReturn {
   return validate(setChainOptions, data)
 }
@@ -402,4 +445,10 @@ export function validateUpdateBalances(data: WalletState[]): ValidateReturn {
 
 export function validateUpdateTheme(data: Theme): ValidateReturn {
   return validate(theme, data)
+}
+
+export function validateAppMetadataUpdate(
+  data: AppMetadata | Partial<AppMetadata>
+): ValidateReturn {
+  return validate(appMetadataUpdate, data)
 }

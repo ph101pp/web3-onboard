@@ -6,10 +6,11 @@ import type {
 } from '@web3-onboard/common'
 
 import { createEIP1193Provider } from '@web3-onboard/common'
-import type {
+import {
   InjectedWalletModule,
   CustomWindow,
-  BinanceProvider
+  BinanceProvider,
+  ProviderExternalUrl
 } from './types.js'
 
 import {
@@ -61,7 +62,8 @@ const metamask: InjectedWalletModule = {
     !otherProviderFlagsExist(ProviderIdentityFlag.MetaMask, provider),
   getIcon: async () => (await import('./icons/metamask.js')).default,
   getInterface: getInjectedInterface(ProviderIdentityFlag.MetaMask, true),
-  platforms: ['all']
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.MetaMask
 }
 
 const infinitywallet: InjectedWalletModule = {
@@ -153,7 +155,8 @@ const binance: InjectedWalletModule = {
       provider
     }
   },
-  platforms: ['desktop']
+  platforms: ['desktop'],
+  externalUrl: ProviderExternalUrl.Binance
 }
 
 const coinbase: InjectedWalletModule = {
@@ -183,7 +186,8 @@ const coinbase: InjectedWalletModule = {
 
     return { provider }
   },
-  platforms: ['all']
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.Coinbase
 }
 
 const detected: InjectedWalletModule = {
@@ -223,7 +227,8 @@ const trust: InjectedWalletModule = {
       provider
     }
   },
-  platforms: ['all']
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.Trust
 }
 
 const opera: InjectedWalletModule = {
@@ -348,9 +353,15 @@ const frame: InjectedWalletModule = {
   checkProviderIdentity: ({ provider }) =>
     !!provider && !!provider[ProviderIdentityFlag.Frame],
   getIcon: async () => (await import('./icons/frame.js')).default,
-  getInterface: async () => ({
-    provider: window.ethereum
-  }),
+  getInterface: async () => {
+    const provider = window.ethereum
+    if (!provider || !provider.connected) {
+      throw new Error(
+        'Frame App must be open with a hot wallet connected. If not installed first download the Frame App.'
+      )
+    }
+    return { provider }
+  },
   platforms: ['desktop']
 }
 
@@ -709,7 +720,8 @@ const phantom: InjectedWalletModule = {
   getInterface: async () => ({
     provider: createEIP1193Provider(window.phantom.ethereum)
   }),
-  platforms: ['all']
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.Phantom
 }
 
 const safepal: InjectedWalletModule = {
@@ -743,7 +755,8 @@ const okxwallet: InjectedWalletModule = {
   getInterface: async () => ({
     provider: createEIP1193Provider(window.okxwallet)
   }),
-  platforms: ['desktop']
+  platforms: ['desktop'],
+  externalUrl: ProviderExternalUrl.OKXWallet
 }
 
 const defiwallet: InjectedWalletModule = {
@@ -756,6 +769,46 @@ const defiwallet: InjectedWalletModule = {
     provider: createEIP1193Provider(window.deficonnectProvider)
   }),
   platforms: ['all']
+}
+
+const safeheron: InjectedWalletModule = {
+  label: ProviderLabel.Safeheron,
+  injectedNamespace: InjectedNameSpace.Safeheron,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider && !!provider[ProviderIdentityFlag.Safeheron],
+  getIcon: async () => (await import('./icons/safeheron.js')).default,
+  getInterface: async () => ({
+    provider: createEIP1193Provider(window.safeheron)
+  }),
+  platforms: ['desktop', 'Chrome', 'Chromium', 'Microsoft Edge']
+}
+
+const talisman: InjectedWalletModule = {
+  label: ProviderLabel.Talisman,
+  injectedNamespace: InjectedNameSpace.Talisman,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider && !!provider[ProviderIdentityFlag.Talisman],
+  getIcon: async () => (await import('./icons/talisman.js')).default,
+  getInterface: async () => ({
+    provider: createEIP1193Provider(window.talismanEth)
+  }),
+  platforms: ['desktop'],
+  externalUrl: ProviderExternalUrl.Talisman
+}
+
+const onekey: InjectedWalletModule = {
+  label: ProviderLabel.OneKey,
+  injectedNamespace: InjectedNameSpace.OneKey,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider &&
+    !!provider.ethereum &&
+    !!provider.ethereum[ProviderIdentityFlag.OneKey],
+  getIcon: async () => (await import('./icons/onekey.js')).default,
+  getInterface: async () => ({
+    provider: createEIP1193Provider(window.$onekey.ethereum)
+  }),
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.OneKey
 }
 
 const wallets = [
@@ -805,7 +858,10 @@ const wallets = [
   rainbow,
   safepal,
   defiwallet,
-  infinitywallet
+  infinitywallet,
+  safeheron,
+  talisman,
+  onekey
 ]
 
 export default wallets

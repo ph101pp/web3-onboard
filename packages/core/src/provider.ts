@@ -9,6 +9,7 @@ import { validEnsChain } from './utils.js'
 import disconnect from './disconnect.js'
 import { state } from './store/index.js'
 import { getBNMulitChainSdk } from './services.js'
+import { configuration } from './configuration.js'
 
 import type {
   ChainId,
@@ -26,10 +27,12 @@ import type {
   Address,
   Balances,
   Ens,
-  Uns,
   WalletPermission,
   WalletState
 } from './types.js'
+
+import type { Uns } from '@web3-onboard/unstoppable-resolution'
+import { updateSecondaryTokens } from './update-balances'
 
 export const ethersProviders: {
   [key: string]: providers.StaticJsonRpcProvider
@@ -190,9 +193,8 @@ export function trackWallet(
 
         const { wallets, chains } = state.get()
 
-        const { chains: walletChains, accounts } = wallets.find(
-          wallet => wallet.label === label
-        )
+        const primaryWallet = wallets.find(wallet => wallet.label === label)
+        const { chains: walletChains, accounts } = primaryWallet
 
         const [connectedWalletChain] = walletChains
 
@@ -202,6 +204,11 @@ export function trackWallet(
         )
 
         const balanceProm = getBalance(address, chain)
+        const secondaryTokenBal = updateSecondaryTokens(
+          primaryWallet,
+          address,
+          chain
+        )
         const account = accounts.find(account => account.address === address)
 
         const ensProm =
@@ -220,14 +227,15 @@ export function trackWallet(
           Promise.resolve(address),
           balanceProm,
           ensProm,
-          unsProm
+          unsProm,
+          secondaryTokenBal
         ])
       })
     )
     .subscribe(res => {
       if (!res) return
-      const [address, balance, ens, uns] = res
-      updateAccount(label, address, { balance, ens, uns })
+      const [address, balance, ens, uns, secondaryTokens] = res
+      updateAccount(label, address, { balance, ens, uns, secondaryTokens })
     })
 
   const chainChanged$ = listenChainChanged({ provider, disconnected$ }).pipe(
@@ -296,7 +304,8 @@ export function trackWallet(
     .pipe(
       switchMap(async chainId => {
         const { wallets, chains } = state.get()
-        const { accounts } = wallets.find(wallet => wallet.label === label)
+        const primaryWallet = wallets.find(wallet => wallet.label === label)
+        const { accounts } = primaryWallet
 
         const chain = chains.find(
           ({ namespace, id }) => namespace === 'evm' && id === chainId
@@ -306,6 +315,12 @@ export function trackWallet(
           accounts.map(async ({ address }) => {
             const balanceProm = getBalance(address, chain)
 
+            const secondaryTokenBal = updateSecondaryTokens(
+              primaryWallet,
+              address,
+              chain
+            )
+
             const ensProm = validEnsChain(chainId)
               ? getEns(address, chain)
               : Promise.resolve(null)
@@ -314,17 +329,19 @@ export function trackWallet(
               ? getUns(address, chain)
               : Promise.resolve(null)
 
-            const [balance, ens, uns] = await Promise.all([
+            const [balance, ens, uns, secondaryTokens] = await Promise.all([
               balanceProm,
               ensProm,
-              unsProm
+              unsProm,
+              secondaryTokenBal
             ])
 
             return {
               address,
               balance,
               ens,
-              uns
+              uns,
+              secondaryTokens
             }
           })
         )
@@ -383,27 +400,14 @@ export async function getUns(
   address: Address,
   chain: Chain
 ): Promise<Uns | null> {
-  const { connect } = state.get()
+  const { unstoppableResolution } = configuration
 
   // check if address is valid ETH address before attempting to resolve
   // chain we don't recognize and don't have a rpcUrl for requests
-  if (connect.disableUDResolution || !utils.isAddress(address) || !chain)
-    return null
+  if (!unstoppableResolution || !utils.isAddress(address) || !chain) return null
 
   try {
-    let uns = null
-    const { Resolution } = await import('@unstoppabledomains/resolution')
-
-    const resolutionInstance = new Resolution()
-    const name = await resolutionInstance.reverse(address)
-
-    if (name) {
-      uns = {
-        name
-      }
-    }
-
-    return uns
+    return await unstoppableResolution(address)
   } catch (error) {
     console.error(error)
     return null
@@ -459,6 +463,31 @@ export function addNewChain(
           decimals: 18
         },
         rpcUrls: [chain.publicRpcUrl || chain.rpcUrl],
+        blockExplorerUrls: chain.blockExplorerUrl
+          ? [chain.blockExplorerUrl]
+          : undefined
+      }
+    ]
+  })
+}
+
+export function updateChainRPC(
+  provider: EIP1193Provider,
+  chain: Chain,
+  rpcUrl: string
+): Promise<unknown> {
+  return provider.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: chain.id,
+        chainName: chain.label,
+        nativeCurrency: {
+          name: chain.label,
+          symbol: chain.token,
+          decimals: 18
+        },
+        rpcUrls: [rpcUrl],
         blockExplorerUrls: chain.blockExplorerUrl
           ? [chain.blockExplorerUrl]
           : undefined

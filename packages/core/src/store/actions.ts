@@ -1,4 +1,4 @@
-import type { Chain, WalletInit, WalletModule } from '@web3-onboard/common'
+import type { AppMetadata, Chain, WalletInit, WalletModule } from '@web3-onboard/common'
 import { nanoid } from 'nanoid'
 import { dispatch } from './index.js'
 import { configuration } from '../configuration.js'
@@ -28,7 +28,9 @@ import type {
   Notify,
   ConnectModalOptions,
   UpdateConnectModalAction,
-  Theme
+  Theme,
+  UpdateChainsAction,
+  UpdateAppMetadataAction
 } from '../types.js'
 
 import {
@@ -43,7 +45,9 @@ import {
   validateUpdateBalances,
   validateNotify,
   validateConnectModalUpdate,
-  validateUpdateTheme
+  validateUpdateTheme,
+  validateSetChainOptions,
+  validateAppMetadataUpdate
 } from '../validation.js'
 
 import {
@@ -60,7 +64,9 @@ import {
   ADD_NOTIFICATION,
   REMOVE_NOTIFICATION,
   UPDATE_ALL_WALLETS,
-  UPDATE_CONNECT_MODAL
+  UPDATE_CONNECT_MODAL,
+  UPDATE_CHAINS,
+  UPDATE_APP_METADATA
 } from './constants.js'
 
 export function addChains(chains: Chain[]): void {
@@ -71,11 +77,33 @@ export function addChains(chains: Chain[]): void {
       ...rest,
       namespace,
       id: id.toLowerCase(),
-      rpcUrl: rpcUrl.trim()
+      rpcUrl: rpcUrl ? rpcUrl.trim() : null
     }))
   }
 
   dispatch(action as AddChainsAction)
+}
+
+export function updateChain(updatedChain: Chain): void {
+  const {
+    label, 
+    token, 
+    rpcUrl, 
+    id: chainId, 
+    namespace: chainNamespace
+  } = updatedChain
+  const error = validateSetChainOptions(
+    { label, token, rpcUrl, chainId, chainNamespace }
+  )
+
+  if (error) {
+    throw error
+  }
+  const action = {
+    type: UPDATE_CHAINS,
+    payload: updatedChain
+  }
+  dispatch(action as UpdateChainsAction)
 }
 
 export function addWallet(wallet: WalletState): void {
@@ -412,4 +440,21 @@ export function updateTheme(theme: Theme): void {
 
   const themingObj = returnTheme(theme)
   themingObj && handleThemeChange(themingObj)
+}
+
+export function updateAppMetadata(
+  update: AppMetadata| Partial<AppMetadata>
+): void {
+  const error = validateAppMetadataUpdate(update)
+
+  if (error) {
+    throw error
+  }
+
+  const action = {
+    type: UPDATE_APP_METADATA,
+    payload: update
+  }
+
+  dispatch(action as UpdateAppMetadataAction)
 }

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { _ } from 'svelte-i18n'
+  import en from '../../i18n/en.json'
   import { MOBILE_WINDOW_WIDTH } from '../../constants.js'
   import { state } from '../../store/index.js'
   import type { WalletWithLoadingIcon } from '../../types.js'
@@ -11,11 +13,15 @@
   export let connectingErrorMessage: string
 
   let windowWidth: number
+  const { connect } = state.get()
 
   function checkConnected(label: string) {
     const { wallets } = state.get()
     return !!wallets.find(wallet => wallet.label === label)
   }
+
+  const wheresMyWalletDefault =
+    'https://www.blocknative.com/blog/metamask-wont-connect-web3-wallet-troubleshooting'
 </script>
 
 <style>
@@ -41,12 +47,21 @@
     margin: 1rem 1rem 0;
   }
 
+  .notice-container {
+    flex: 0 0 100%;
+    margin-top: 0.75rem;
+  }
+
   @media all and (min-width: 768px) {
     .wallets-container {
       display: grid;
       grid-template-columns: repeat(var(--onboard-wallet-columns, 2), 1fr);
       padding: 1rem;
       border: none;
+    }
+    .notice-container {
+      grid-column: span 2;
+      margin: 0;
     }
   }
 </style>
@@ -73,5 +88,20 @@
           connectingWalletLabel !== wallet.label}
       />
     {/each}
+    <div class="notice-container">
+      <Warning>
+        <div>{$_('connect.selectingWallet.whyDontISeeMyWallet', {
+          default: en.connect.selectingWallet.whyDontISeeMyWallet
+        })}</div>
+        <a
+          class="link pointer"
+          href={connect.wheresMyWalletLink || wheresMyWalletDefault}
+          target="_blank"
+          rel="noreferrer noopener">{$_('connect.selectingWallet.learnMore', {
+            default: en.connect.selectingWallet.learnMore
+          })}</a
+        >
+      </Warning>
+    </div>
   </div>
 </div>

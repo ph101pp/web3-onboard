@@ -29,7 +29,7 @@
 <style>
   :host {
     /* Component Variables */
-    --font-family-normal: Sofia Pro;
+    --font-family-normal: var(--w3o-font-family, Inter, sans-serif);
     --font-size-4: 1.25rem;
     --font-size-5: 1rem;
     --font-size-6: 0.875rem;
@@ -105,7 +105,7 @@
   }
 </style>
 
-<div in:fade={{ duration: 250, easing: cubicOut }} class="tp-main">
+<div in:fade|local={{ duration: 250, easing: cubicOut }} class="tp-main">
   {#if expanded || requireTransactionApproval}
     <Maximized
       {toggleExpanded}

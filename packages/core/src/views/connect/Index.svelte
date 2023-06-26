@@ -4,11 +4,16 @@
   import { BigNumber } from 'ethers'
   import { _ } from 'svelte-i18n'
   import en from '../../i18n/en.json'
-  import { listenAccountsChanged, selectAccounts } from '../../provider.js'
+  import { listenAccountsChanged } from '../../provider.js'
   import { state } from '../../store/index.js'
   import { connectWallet$, onDestroy$ } from '../../streams.js'
   import { addWallet, updateAccount } from '../../store/actions.js'
-  import { validEnsChain, isSVG, setLocalStore } from '../../utils.js'
+  import {
+    validEnsChain,
+    isSVG,
+    setLocalStore,
+    getLocalStore
+  } from '../../utils.js'
   import CloseButton from '../shared/CloseButton.svelte'
   import Modal from '../shared/Modal.svelte'
   import Agreement from './Agreement.svelte'
@@ -28,6 +33,8 @@
     filter,
     firstValueFrom,
     mapTo,
+    shareReplay,
+    startWith,
     Subject,
     take,
     takeUntil
@@ -48,11 +55,15 @@
     WalletState,
     WalletWithLoadingIcon
   } from '../../types.js'
+  import { updateSecondaryTokens } from '../../update-balances'
 
   export let autoSelect: ConnectOptions['autoSelect']
 
-  const { appMetadata } = configuration
-  const { icon } = appMetadata || {}
+  const appMetadata$ = state
+    .select('appMetadata')
+    .pipe(startWith(state.get().appMetadata), shareReplay(1))
+
+  const { unstoppableResolution, device } = configuration
 
   const { walletModules, connect } = state.get()
   const cancelPreviousConnect$ = new Subject<void>()
@@ -118,24 +129,7 @@
       if (existingWallet) {
         // set as first wallet
         addWallet(existingWallet)
-
-        try {
-          await selectAccounts(existingWallet.provider)
-          // change step on next event loop
-          setTimeout(() => setStep('connectedWallet'), 1)
-        } catch (error) {
-          const { code } = error as { code: number }
-
-          if (
-            code === ProviderRpcErrorCode.UNSUPPORTED_METHOD ||
-            code === ProviderRpcErrorCode.DOES_NOT_EXIST
-          ) {
-            connectWallet$.next({
-              inProgress: false,
-              actionRequired: existingWallet.label
-            })
-          }
-        }
+        setTimeout(() => setStep('connectedWallet'), 1)
 
         selectedWallet = existingWallet
 
@@ -148,7 +142,7 @@
         chains,
         BigNumber,
         EventEmitter,
-        appMetadata
+        appMetadata: $appMetadata$
       })
 
       const loadedIcon = await icon
@@ -224,8 +218,38 @@
       }
 
       // store last connected wallet
-      if (state.get().connect.autoConnectLastWallet) {
-        setLocalStore(STORAGE_KEYS.LAST_CONNECTED_WALLET, label)
+      if (
+        state.get().connect.autoConnectLastWallet ||
+        state.get().connect.autoConnectAllPreviousWallet
+      ) {
+        let labelsList: string | Array<String> = getLocalStore(
+          STORAGE_KEYS.LAST_CONNECTED_WALLET
+        )
+
+        try {
+          let labelsListParsed: Array<String> = JSON.parse(labelsList)
+          if (labelsListParsed && Array.isArray(labelsListParsed)) {
+            const tempLabels = labelsListParsed
+            labelsList = [...new Set([label, ...tempLabels])]
+          }
+        } catch (err) {
+          if (
+            err instanceof SyntaxError &&
+            labelsList &&
+            typeof labelsList === 'string'
+          ) {
+            const tempLabel = labelsList
+            labelsList = [tempLabel]
+          } else {
+            throw new Error(err as string)
+          }
+        }
+
+        if (!labelsList) labelsList = [label]
+        setLocalStore(
+          STORAGE_KEYS.LAST_CONNECTED_WALLET,
+          JSON.stringify(labelsList)
+        )
       }
 
       const chain = await getChainId(provider)
@@ -312,7 +336,7 @@
     )
 
     const { address } = accounts[0]
-    let { balance, ens, uns } = accounts[0]
+    let { balance, ens, uns, secondaryTokens } = accounts[0]
 
     if (balance === null) {
       getBalance(address, appChain).then(balance => {
@@ -320,6 +344,20 @@
           balance
         })
       })
+    }
+    if (
+      appChain &&
+      !secondaryTokens &&
+      Array.isArray(appChain.secondaryTokens) &&
+      appChain.secondaryTokens.length
+    ) {
+      updateSecondaryTokens(selectedWallet, address, appChain).then(
+        secondaryTokens => {
+          updateAccount(selectedWallet.label, address, {
+            secondaryTokens
+          })
+        }
+      )
     }
 
     if (ens === null && validEnsChain(connectedWalletChain.id)) {
@@ -330,7 +368,7 @@
       })
     }
 
-    if (uns === null) {
+    if (uns === null && unstoppableResolution) {
       getUns(address, appChain).then(uns => {
         updateAccount(selectedWallet.label, address, {
           uns
@@ -381,6 +419,11 @@
   function scrollToTop() {
     scrollContainer && scrollContainer.scrollTo(0, 0)
   }
+
+  const isSafariMobile =
+    device.type === 'mobile' &&
+    device.browser.name &&
+    device.browser.name === 'Safari'
 </script>
 
 <style>
@@ -485,6 +528,11 @@
   .scroll-container::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
   }
+  .mobile-safari {
+    /* Handles for Mobile Safari's floating Address Bar 
+    covering the bottom of the connect modal **/
+    padding-bottom: 80px;
+  }
 
   @media all and (min-width: 768px) {
     .container {
@@ -508,7 +556,7 @@
 
 {#if !autoSelect.disableModals}
   <Modal close={!connect.disableClose && close}>
-    <div class="container">
+    <div class="container" class:mobile-safari={isSafariMobile}>
       {#if connect.showSidebar}
         <Sidebar step={$modalStep$} />
       {/if}
@@ -517,11 +565,11 @@
         {#if windowWidth <= MOBILE_WINDOW_WIDTH}
           <div class="mobile-header">
             <div class="icon-container">
-              {#if icon}
-                {#if isSVG(icon)}
-                  {@html icon}
+              {#if $appMetadata$ && $appMetadata$.icon}
+                {#if isSVG($appMetadata$.icon)}
+                  {@html $appMetadata$.icon}
                 {:else}
-                  <img src={icon} alt="logo" />
+                  <img src={$appMetadata$.icon} alt="logo" />
                 {/if}
               {:else}
                 {@html defaultBnIcon}

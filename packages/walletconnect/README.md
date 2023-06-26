@@ -35,7 +35,6 @@ type WalletConnectOptions = {
        * Project ID associated with [WalletConnect account](https://cloud.walletconnect.com)
        */
       projectId: string
-
       /**
        * Defaults to version: 1 - this behavior will be deprecated after the WalletConnect v1 sunset
        */
@@ -47,6 +46,10 @@ type WalletConnectOptions = {
        * optional chains for the WalletConnect module
        */
       requiredChains?: number[] | undefined
+      /**
+       * `undefined` by default, see https://docs.walletconnect.com/2.0/web/walletConnectModal/options
+       */
+      qrModalOptions?: EthereumProviderOptions['qrModalOptions']
     }
 )
 ```
@@ -70,7 +73,11 @@ const wcV2InitOptions = {
   /**
    * Project ID associated with [WalletConnect account](https://cloud.walletconnect.com)
    */
-  projectId: 'abc123...'
+  projectId: 'abc123...',
+  /**
+   * Chains required to be supported by all wallets connecting to your DApp
+   */
+  requiredChains: [1, 56]
 }
 
 // initialize the module with options

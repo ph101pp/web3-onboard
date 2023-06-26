@@ -9,7 +9,8 @@ module.exports = {
   entry: './src/main.js',
   resolve: {
     fallback: {
-      path: require.resolve('path-browserify')
+      path: require.resolve('path-browserify'),
+      zlib: require.resolve('browserify-zlib')
     },
     alias: {
       svelte: path.dirname(require.resolve('svelte/package.json')),
@@ -21,7 +22,8 @@ module.exports = {
       os: 'os-browserify/browser',
       process: 'process/browser',
       stream: 'stream-browserify',
-      util: 'util'
+      util: 'util',
+      zlib: 'browserify-zlib'
     },
     extensions: ['.mjs', '.js', '.svelte'],
     mainFields: ['svelte', 'browser', 'module', 'main']
