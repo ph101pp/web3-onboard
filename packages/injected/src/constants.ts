@@ -28,5 +28,10 @@ export const WALLET_NAMES: { [key: string]: string } = {
   defiwallet: 'DeFi Wallet',
   safeheron: 'Safeheron',
   talismanEth: 'Talisman',
-  onekey: 'OneKey'
+  onekey: 'OneKey',
+  fordefi: 'Fordefi',
+  roninWallet: 'Ronin Wallet',
+  coin98wallet: 'Coin98 Wallet',
+  SubWallet: 'SubWallet',
+  kayros: 'Kayros'
 }

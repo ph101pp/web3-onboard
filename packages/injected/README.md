@@ -20,6 +20,12 @@ const onboard = Onboard({
       token: 'ETH',
       label: 'Ethereum Mainnet',
       rpcUrl: MAINNET_RPC_URL
+    },
+    {
+      id: '0x2105',
+      token: 'ETH',
+      label: 'Base',
+      rpcUrl: 'https://mainnet.base.org'
     }
   ],
   appMetadata: {
@@ -42,7 +48,7 @@ console.log(connectedWallets)
 - Phantom - _Desktop & Mobile_
 - SafePal - _Desktop & Mobile_
 - Zerion - _Desktop & Mobile_
-- OKX Wallet - _Desktop_
+- OKX Wallet - _Desktop & Mobile_
 - Taho (Previously named Tally Ho wallet) - _Desktop_
 - Trust - _Mobile_
 - Opera - _Desktop & Mobile_
@@ -84,6 +90,10 @@ console.log(connectedWallets)
 - BifrostWallet - _Desktop & Mobile_
 - Safeheron - _Desktop_
 - Talisman - _Desktop_
+- Ronin Wallet - _Desktop & Mobile_
+- Coin98 Wallet - _Desktop & Mobile_
+- SubWallet - _Desktop & Mobile_
+- Kayros - _Desktop_
 
 ## Filtering Wallets
 

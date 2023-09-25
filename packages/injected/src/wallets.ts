@@ -618,7 +618,8 @@ const bitkeep: InjectedWalletModule = {
   getInterface: async () => ({
     provider: window.bitkeep && window.bitkeep.ethereum
   }),
-  platforms: ['all']
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.BitKeep
 }
 
 const sequence: InjectedWalletModule = {
@@ -755,7 +756,7 @@ const okxwallet: InjectedWalletModule = {
   getInterface: async () => ({
     provider: createEIP1193Provider(window.okxwallet)
   }),
-  platforms: ['desktop'],
+  platforms: ['all'],
   externalUrl: ProviderExternalUrl.OKXWallet
 }
 
@@ -796,6 +797,18 @@ const talisman: InjectedWalletModule = {
   externalUrl: ProviderExternalUrl.Talisman
 }
 
+const ronin: InjectedWalletModule = {
+  label: ProviderLabel.RoninWallet,
+  injectedNamespace: InjectedNameSpace.RoninWallet,
+  checkProviderIdentity: ({ provider }) => !!provider,
+  getIcon: async () => (await import('./icons/roninwallet.js')).default,
+  getInterface: async () => ({
+    provider: createEIP1193Provider(window.ronin.provider)
+  }),
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.RoninWallet
+}
+
 const onekey: InjectedWalletModule = {
   label: ProviderLabel.OneKey,
   injectedNamespace: InjectedNameSpace.OneKey,
@@ -809,6 +822,74 @@ const onekey: InjectedWalletModule = {
   }),
   platforms: ['all'],
   externalUrl: ProviderExternalUrl.OneKey
+}
+
+const fordefi: InjectedWalletModule = {
+  label: ProviderLabel.Fordefi,
+  injectedNamespace: InjectedNameSpace.Ethereum,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider &&
+    !!provider[ProviderIdentityFlag.Fordefi],
+  getIcon: async () => (await import('./icons/fordefi.js')).default,
+  getInterface: getInjectedInterface(ProviderIdentityFlag.Fordefi, true),
+  platforms: ['desktop']
+}
+
+const coin98wallet: InjectedWalletModule = {
+  label: ProviderLabel.Coin98Wallet,
+  injectedNamespace: InjectedNameSpace.Ethereum,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider && !!provider[ProviderIdentityFlag.Coin98Wallet],
+  getIcon: async () => (await import('./icons/coin98wallet.js')).default,
+  getInterface: async () => {
+    const ethereumInjectionExists = window.hasOwnProperty(
+      InjectedNameSpace.Ethereum
+    )
+
+    let provider: EIP1193Provider
+
+    // check if coin98 is injected into window.ethereum
+    if (
+      ethereumInjectionExists &&
+      window[InjectedNameSpace.Ethereum].isCoin98
+    ) {
+      provider = window[InjectedNameSpace.Ethereum]
+    } else {
+      // directly use the window.coin98 injection
+      provider = window[InjectedNameSpace.Coin98Wallet].provider
+    }
+
+    return {
+      provider
+    }
+  },
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.Coin98Wallet
+}
+
+const subwallet: InjectedWalletModule = {
+  label: ProviderLabel.SubWallet,
+  injectedNamespace: InjectedNameSpace.SubWallet,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider && !!provider[ProviderIdentityFlag.SubWallet],
+  getIcon: async () => (await import('./icons/subwallet.js')).default,
+  getInterface: async () => ({
+    provider: createEIP1193Provider(window.SubWallet)
+  }),
+  platforms: ['all'],
+  externalUrl: ProviderExternalUrl.SubWallet
+}
+
+const kayros: InjectedWalletModule = {
+  label: ProviderLabel.Kayros,
+  injectedNamespace: InjectedNameSpace.Kayros,
+  checkProviderIdentity: ({ provider }) =>
+    !!provider && !!provider[ProviderIdentityFlag.Kayros],
+  getIcon: async () => (await import('./icons/kayros.js')).default,
+  getInterface: async () => ({
+    provider: createEIP1193Provider(window.kayros)
+  }),
+  platforms: ['desktop']
 }
 
 const wallets = [
@@ -861,7 +942,12 @@ const wallets = [
   infinitywallet,
   safeheron,
   talisman,
-  onekey
+  onekey,
+  fordefi,
+  ronin,
+  coin98wallet,
+  subwallet,
+  kayros
 ]
 
 export default wallets

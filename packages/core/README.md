@@ -7,6 +7,7 @@
 This is the core package that contains all of the UI and logic to be able to seamlessly connect user's wallets to your app and track the state of those wallets. Onboard no longer contains any wallet specific code, so wallets need to be passed in upon initialization.
 
 _Tip: Release 2.24.0 moves the default position of the account center from topRight to bottomRight. To reset your application to topRight, include the following when initializing onboard:_
+
 ```typescript
   accountCenter: {
       desktop: {
@@ -147,6 +148,7 @@ type Chain = {
   publicRpcUrl?: string // an optional public RPC used when adding a new chain config to the wallet
   blockExplorerUrl?: string // also used when adding a new config to the wallet
   secondaryTokens?: SecondaryTokens[] // An optional array of tokens (max of 5) to be available to the dapp in the app state object per wallet within the wallet account and displayed in Account Center (if enabled)
+  protectedRpcUrl?: string //An optional protected RPC URL - Defaults to Blocknative's private RPC aggregator to allow users to update the chain RPC within their wallet, specifically for private RPCs that protect user transactions. More information can be found at `https://docs.blocknative.com/blocknative-mev-protection/transaction-boost`
 }
 interface SecondaryTokens {
   /**
@@ -246,6 +248,16 @@ type ConnectModalOptions = {
    * Defaults to `https://www.blocknative.com/blog/metamask-wont-connect-web3-wallet-troubleshooting`
    */
   wheresMyWalletLink?: string
+  /**
+   * Hide the "Where is my wallet?" link notice displayed in the connect modal
+   * at the bottom of the wallets list
+   */
+  removeWhereIsMyWalletWarning?: boolean
+  /**
+   * Hide the "I don't have a wallet" link displayed
+   * on the left panel of the connect modal
+   */
+  removeIDontHaveAWalletInfoLink?: boolean
   /**
    * @deprecated Has no effect unless `@web3-onboard/unstoppable-resolution`
    * package has been added and passed into the web3-onboard initialization
@@ -352,6 +364,16 @@ type AccountCenter = {
   position?: AccountCenterPosition // default: 'bottomRight'
   expanded?: boolean // default: true
   minimal?: boolean // enabled by default for mobile
+  /**
+   * Controls the visibility of the 'Enable Transaction Protection' button within the expanded Account Center.
+   * - When set to false (default), the button is visible.
+   * - When set to true, the button is hidden.
+   * This setting can be configured globally for the Account Center, or separately for different interfaces like desktop/mobile.
+   * defaults to `docs.blocknative.com/blocknative-mev-protection/transaction-boost-alpha`
+   * Use this property to override the default link to give users
+   * more information about transaction protection and the RPC be set
+   */
+  transactionProtectionInfoLink?: string
 
   /**
    * @deprecated Use top level containerElements property
@@ -370,6 +392,16 @@ type AccountCenterOptions = {
    * Can be set as a global for Account Center or per interface (desktop/mobile)
    */
   hideTransactionProtectionBtn?: boolean
+  /**
+   * Controls the visibility of the 'Enable Transaction Protection' button within the expanded Account Center.
+   * - When set to false (default), the button is visible.
+   * - When set to true, the button is hidden.
+   * This setting can be configured globally for the Account Center, or separately for different interfaces like desktop/mobile.
+   * defaults to `docs.blocknative.com/blocknative-mev-protection/transaction-boost-alpha`
+   * Use this property to override the default link to give users
+   * more information about transaction protection and the RPC be set
+   */
+  transactionProtectionInfoLink?: string
 }
 
 type AccountCenterPosition =
@@ -566,6 +598,24 @@ const onboard = Onboard({
       token: 'ETH',
       label: 'Goerli',
       rpcUrl: ETH_GOERLI_RPC
+    },
+    {
+      id: 42161,
+      token: 'ARB-ETH',
+      label: 'Arbitrum One',
+      rpcUrl: 'https://rpc.ankr.com/arbitrum'
+    },
+    {
+      id: '0xa4ba',
+      token: 'ARB',
+      label: 'Arbitrum Nova',
+      rpcUrl: 'https://nova.arbitrum.io/rpc'
+    },
+    {
+      id: '0x2105',
+      token: 'ETH',
+      label: 'Base',
+      rpcUrl: 'https://mainnet.base.org'
     },
     {
       id: '0x38',
@@ -854,6 +904,12 @@ const onboard = Onboard({
       rpcUrl:
         `https://mainnet.infura.io/v3/${INFURA_KEY}` ||
         `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`
+    },
+    {
+      id: '0x2105',
+      token: 'ETH',
+      label: 'Base',
+      rpcUrl: 'https://mainnet.base.org'
     }
   ]
 })

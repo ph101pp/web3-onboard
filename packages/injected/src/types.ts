@@ -64,20 +64,24 @@ export enum ProviderIdentityFlag {
   DeFiWallet = 'isDeficonnectProvider',
   Safeheron = 'isSafeheron',
   Talisman = 'isTalisman',
-  OneKey = 'isOneKey'
+  OneKey = 'isOneKey',
+  Fordefi = 'isFordefi',
+  Coin98Wallet = 'isCoin98',
+  SubWallet = 'isSubWallet',
+  Kayros = 'isKayros'
 }
-
 
 /**
  * The ProviderExternalUrl enum represents the external URLs associated
  * with different injected providers. It is used to direct end users who
  * do not have a wallet installed to the corresponding wallet installation page.
- * For this to be displayed a dapp must set `displayUnavailable` 
- * to an array (to specify displayed unavailable wallets) or 
+ * For this to be displayed a dapp must set `displayUnavailable`
+ * to an array (to specify displayed unavailable wallets) or
  * true (to display all unavailable wallets) and a user select that wallet.
  */
 export enum ProviderExternalUrl {
   Binance = 'https://www.bnbchain.org/ru/blog/binance-extension-wallet/',
+  BitKeep = 'https://bitkeep.com/en/download?type=0',
   Coinbase = 'https://www.coinbase.com/wallet/downloads',
   MetaMask = 'https://metamask.io/download/',
   OKXWallet = 'https://okx.com/download',
@@ -85,6 +89,10 @@ export enum ProviderExternalUrl {
   Talisman = 'https://www.talisman.xyz/',
   Trust = 'https://trustwallet.com/download/',
   OneKey = 'https://onekey.so/download/',
+  RoninWallet = 'https://wallet.skymavis.com/',
+  Coin98Wallet = 'https://coin98.com/wallet/',
+  SubWallet = 'https://www.subwallet.app/',
+  Kayros = 'https://www.kayros.games/wallet/'
 }
 
 export enum ProviderLabel {
@@ -139,7 +147,12 @@ export enum ProviderLabel {
   DeFiWallet = 'DeFi Wallet',
   Safeheron = 'Safeheron',
   Talisman = 'Talisman',
-  OneKey = 'OneKey'
+  OneKey = 'OneKey',
+  Fordefi = 'Fordefi',
+  RoninWallet = 'Ronin Wallet',
+  Coin98Wallet = 'Coin98 Wallet',
+  SubWallet = 'SubWallet',
+  Kayros = 'Kayros'
 }
 
 export interface MeetOneProvider extends ExternalProvider {
@@ -172,7 +185,11 @@ export enum InjectedNameSpace {
   DeFiConnectProvider = 'deficonnectProvider',
   Safeheron = 'safeheron',
   Talisman = 'talismanEth',
-  OneKey = '$onekey'
+  OneKey = '$onekey',
+  RoninWallet = 'ronin',
+  Coin98Wallet = 'coin98',
+  SubWallet = 'SubWallet',
+  Kayros = 'kayros'
 }
 
 export interface CustomWindow extends Window {
@@ -212,6 +229,16 @@ export interface CustomWindow extends Window {
   $onekey: {
     ethereum: InjectedProvider
   }
+  ronin: {
+    provider: InjectedProvider
+  }
+  coin98: {
+    provider: InjectedProvider
+  }
+  SubWallet: {
+    provider: InjectedProvider
+  }
+  kayros: InjectedProvider
 }
 
 export type InjectedProvider = ExternalProvider &
@@ -239,7 +266,7 @@ export interface InjectedWalletOptions {
    * are not currently available to the end user.
    * If set to an array of ProviderLabel.walletLabel
    * those wallets will be the only unavailable injected wallets shown
-   * For example [ProviderLabel.MetaMask, ProviderLabel.Trust] 
+   * For example [ProviderLabel.MetaMask, ProviderLabel.Trust]
    */
   displayUnavailable?: boolean | string[]
   /**A function that allows for customizing the message to be displayed if the wallet
@@ -254,9 +281,9 @@ export interface InjectedWalletModule extends WalletModule {
   injectedNamespace: InjectedNameSpace
   checkProviderIdentity: (helpers: { provider: any; device: Device }) => boolean
   platforms: Platform[]
-  /**  
-   * A Url to link users to a download page for the wallet 
+  /**
+   * A Url to link users to a download page for the wallet
    * to be shown if not installed or available on the browser
-  */
+   */
   externalUrl?: string
 }

@@ -1,13 +1,17 @@
-import type { CoreTypes } from '@walletconnect/types'
+import { REQUIRED_METHODS } from '@walletconnect/ethereum-provider'
+import type { EthereumProviderOptions } from '@walletconnect/ethereum-provider/dist/types/EthereumProvider'
 import type { EthereumProvider } from '@walletconnect/ethereum-provider'
+import type { CoreTypes } from '@walletconnect/types'
+
 import type {
   Chain,
   ProviderAccounts,
   WalletInit,
   EIP1193Provider
 } from '@web3-onboard/common'
-import { JQueryStyleEventEmitter } from 'rxjs/internal/observable/fromEvent'
-import { isHexString, WalletConnectOptions } from './index.js'
+import type { WalletConnectOptions } from './index.js'
+import type { JQueryStyleEventEmitter } from 'rxjs/internal/observable/fromEvent'
+import { isHexString } from './index.js'
 
 // methods that require user interaction
 const methods = [
@@ -19,13 +23,24 @@ const methods = [
   'eth_signTypedData_v4'
 ]
 
-function walletConnect(options?: WalletConnectOptions): WalletInit {
-  if (!options || options.version !== 2) {
+function walletConnect(options: WalletConnectOptions): WalletInit {
+  if (options.version !== 2 || !options.projectId) {
     throw new Error(
       'WalletConnect requires a projectId. Please visit https://cloud.walletconnect.com to get one.'
     )
   }
-  const { projectId, handleUri, requiredChains, qrModalOptions } = options
+  const {
+    projectId,
+    handleUri,
+    requiredChains,
+    optionalChains,
+    qrModalOptions,
+    additionalRequiredMethods,
+    additionalOptionalMethods,
+    dappUrl
+  } = options
+
+  let instance: unknown
 
   return () => {
     return {
@@ -45,10 +60,17 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
 
         const getMetaData = (): CoreTypes.Metadata | undefined => {
           if (!appMetadata) return undefined
+          const url = dappUrl || appMetadata.explore || ''
+
+          !url &&
+            !url.length &&
+            console.warn(
+              `It is strongly recommended to supply a dappUrl as it is required by some wallets (i.e. MetaMask) to allow connection.`
+            )
           const wcMetaData: CoreTypes.Metadata = {
             name: appMetadata.name,
             description: appMetadata.description || '',
-            url: appMetadata.explore || appMetadata.gettingStartedGuide || '',
+            url,
             icons: []
           }
 
@@ -72,13 +94,36 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
             ? // @ts-ignore
               // Required as WC package does not support hex numbers
               requiredChains.map(chainID => parseInt(chainID))
-            : [1]
+            : []
+
+        // Defaults to the chains provided within the web3-onboard init chain property
+        const optionalChainsParsed: number[] =
+          Array.isArray(optionalChains) &&
+          optionalChains.length &&
+          optionalChains.every(num => !isNaN(num))
+            ? // @ts-ignore
+              // Required as WC package does not support hex numbers
+              optionalChains.map(chainID => parseInt(chainID))
+            : chains.map(({ id }) => parseInt(id, 16))
+
+        const requiredMethodsSet = new Set(
+          additionalRequiredMethods && Array.isArray(additionalRequiredMethods)
+            ? [...additionalRequiredMethods, ...REQUIRED_METHODS]
+            : REQUIRED_METHODS
+        )
+        const requiredMethods = Array.from(requiredMethodsSet)
+
+        const optionalMethods =
+          additionalOptionalMethods && Array.isArray(additionalOptionalMethods)
+            ? [...additionalOptionalMethods, ...methods]
+            : methods
 
         const connector = await EthereumProvider.init({
           projectId,
           chains: requiredChainsParsed, // default to mainnet
-          optionalChains: chains.map(({ id }) => parseInt(id, 16)),
-          optionalMethods: methods,
+          methods: requiredMethods,
+          optionalChains: optionalChainsParsed,
+          optionalMethods,
           showQrModal: true,
           rpcMap: chains
             .map(({ id, rpcUrl }) => ({ id, rpcUrl }))
@@ -88,7 +133,7 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
             }, {}),
           metadata: getMetaData(),
           qrModalOptions: qrModalOptions
-        })
+        } as EthereumProviderOptions)
 
         const emitter = new EventEmitter()
         class EthProvider {
@@ -96,8 +141,11 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
           public connector: InstanceType<typeof EthereumProvider>
           public chains: Chain[]
           public disconnect: EIP1193Provider['disconnect']
+          // @ts-ignore
           public emit: typeof EventEmitter['emit']
+          // @ts-ignore
           public on: typeof EventEmitter['on']
+          // @ts-ignore
           public removeListener: typeof EventEmitter['removeListener']
 
           private disconnected$: InstanceType<typeof Subject>
@@ -121,7 +169,8 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
             fromEvent(this.connector, 'accountsChanged', payload => payload)
               .pipe(takeUntil(this.disconnected$))
               .subscribe({
-                next: accounts => {
+                next: payload => {
+                  const accounts = Array.isArray(payload) ? payload : [payload]
                   this.emit('accountsChanged', accounts)
                 },
                 error: console.warn
@@ -162,7 +211,10 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
               })
 
             this.disconnect = () => {
-              if (this.connector.session) this.connector.disconnect()
+              if (this.connector.session) {
+                this.connector.disconnect()
+                instance = null
+              }
             }
 
             if (options && handleUri) {
@@ -184,6 +236,7 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
 
             const checkForSession = () => {
               const session = this.connector.session
+              instance = session
               if (session) {
                 this.emit('accountsChanged', this.connector.accounts)
                 this.emit('chainChanged', this.connector.chainId)
@@ -239,6 +292,7 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
                       // update ethereum provider to load accounts & chainId
                       const accounts = this.connector.accounts
                       const chainId = this.connector.chainId
+                      instance = this.connector.session
                       const hexChainId = `0x${chainId.toString(16)}`
                       this.emit('chainChanged', hexChainId)
                       return resolve(accounts)
@@ -290,7 +344,8 @@ function walletConnect(options?: WalletConnectOptions): WalletInit {
         }
 
         return {
-          provider: new EthProvider({ chains, connector })
+          provider: new EthProvider({ chains, connector }),
+          instance
         }
       }
     }

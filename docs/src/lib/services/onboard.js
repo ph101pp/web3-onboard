@@ -53,23 +53,25 @@ const intiOnboard = async (theme) => {
   const { default: xdefiModule } = await import('@web3-onboard/xdefi')
   const { default: cedeModule } = await import('@web3-onboard/cede-store')
   const { default: frameModule } = await import('@web3-onboard/frame')
+  const { default: arcanaModule } = await import('@web3-onboard/arcana-auth')
   const { default: bloctoModule } = await import('@web3-onboard/blocto')
   const { default: venlyModule } = await import('@web3-onboard/venly')
   const INFURA_ID = '8b60d52405694345a99bcb82e722e0af'
 
   const injected = injectedModule()
   const infinityWallet = infinityWalletModule()
+  const arcanaWallet = arcanaModule({
+    clientID: 'xar_test_c9c3bc702eb13255c58dab0e74cfa859711c13cb'
+  })
   const coinbase = coinbaseModule()
   const dcent = dcentModule()
   const walletConnect = walletConnectModule({
-    connectFirstChainId: true,
-    version: 2,
-    projectId: 'f6bd6e2911b56f5ac3bc8b2d0e2d7ad5',
-    qrcodeModalOptions: {
-      mobileLinks: ['rainbow', 'metamask', 'argent', 'trust', 'imtoken', 'pillar']
-    }
+    projectId: 'f6bd6e2911b56f5ac3bc8b2d0e2d7ad5'
   })
-  const ledger = ledgerModule()
+  const ledger = ledgerModule({
+    walletConnectVersion: 2,
+    projectId: 'f6bd6e2911b56f5ac3bc8b2d0e2d7ad5'
+  })
   const keystone = keystoneModule()
   const keepkey = keepkeyModule()
   const gnosis = gnosisModule()
@@ -99,7 +101,8 @@ const intiOnboard = async (theme) => {
   const uauthOptions = {
     clientID: 'a25c3a65-a1f2-46cc-a515-a46fe7acb78c',
     redirectUri: 'http://localhost:8080/',
-    scope: 'openid wallet email:optional humanity_check:optional profile:optional social:optional'
+    scope: 'openid wallet email:optional humanity_check:optional profile:optional social:optional',
+    walletConnectProjectId: 'f6bd6e2911b56f5ac3bc8b2d0e2d7ad5'
   }
   const uauth = uauthModule(uauthOptions)
 
@@ -116,9 +119,11 @@ const intiOnboard = async (theme) => {
   })
 
   return Onboard({
+    connect: { autoConnectAllPreviousWallet: true },
     wallets: [
       injected,
       walletConnect,
+      arcanaWallet,
       coinbase,
       ledger,
       trezor,
@@ -172,22 +177,34 @@ const intiOnboard = async (theme) => {
         rpcUrl: 'https://rpc.sepolia.org/'
       },
       {
-        id: '0x13881',
-        token: 'MATIC',
-        label: 'Polygon - Mumbai',
-        rpcUrl: 'https://matic-mumbai.chainstacklabs.com'
+        id: 42161,
+        token: 'ARB-ETH',
+        label: 'Arbitrum One',
+        rpcUrl: 'https://rpc.ankr.com/arbitrum'
       },
       {
-        id: '0x38',
-        token: 'BNB',
-        label: 'Binance',
-        rpcUrl: 'https://bsc-dataseed.binance.org/'
+        id: '0xa4ba',
+        token: 'ARB',
+        label: 'Arbitrum Nova',
+        rpcUrl: 'https://nova.arbitrum.io/rpc'
+      },
+      {
+        id: '0x2105',
+        token: 'ETH',
+        label: 'Base',
+        rpcUrl: 'https://mainnet.base.org'
       },
       {
         id: '0x89',
         token: 'MATIC',
         label: 'Polygon',
         rpcUrl: 'https://matic-mainnet.chainstacklabs.com'
+      },
+      {
+        id: '0x38',
+        token: 'BNB',
+        label: 'Binance',
+        rpcUrl: 'https://bsc-dataseed.binance.org/'
       },
       {
         id: '0xfa',
@@ -206,12 +223,6 @@ const intiOnboard = async (theme) => {
         token: 'ARB-ETH',
         label: 'Arbitrum',
         rpcUrl: 'https://rpc.ankr.com/arbitrum'
-      },
-      {
-        id: 84531,
-        token: 'ETH',
-        label: 'Base Goerli',
-        rpcUrl: 'https://goerli.base.org'
       }
     ],
     appMetadata: {
@@ -221,7 +232,8 @@ const intiOnboard = async (theme) => {
       recommendedInjectedWallets: [
         { name: 'MetaMask', url: 'https://metamask.io' },
         { name: 'Coinbase', url: 'https://wallet.coinbase.com/' }
-      ]
+      ],
+      explore: 'https://onboard.blocknative.com/'
     },
     accountCenter: { desktop: { enabled: true }, mobile: { enabled: true } },
     theme: theme || 'system',

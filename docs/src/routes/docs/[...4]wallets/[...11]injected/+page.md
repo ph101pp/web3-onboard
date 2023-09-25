@@ -47,6 +47,24 @@ const onboard = Onboard({
       token: 'ETH',
       label: 'Ethereum Mainnet',
       rpcUrl: MAINNET_RPC_URL
+    },
+    {
+      id: 42161,
+      token: 'ARB-ETH',
+      label: 'Arbitrum One',
+      rpcUrl: 'https://rpc.ankr.com/arbitrum'
+    },
+    {
+      id: '0xa4ba',
+      token: 'ARB',
+      label: 'Arbitrum Nova',
+      rpcUrl: 'https://nova.arbitrum.io/rpc'
+    },
+    {
+      id: '0x2105',
+      token: 'ETH',
+      label: 'Base',
+      rpcUrl: 'https://mainnet.base.org'
     }
   ],
   appMetadata: {
@@ -293,7 +311,7 @@ const injected = injectedModule({
 - Trust - _Desktop & Mobile_
 - SafePal - _Desktop & Mobile_
 - Zerion - _Desktop & Mobile_
-- OKX Wallet - _Desktop_
+- OKX Wallet - _Desktop & Mobile_
 - Taho (Previously named Tally Ho wallet) - _Desktop_
 - Opera - _Desktop & Mobile_
 - Status - _Mobile_
@@ -335,6 +353,11 @@ const injected = injectedModule({
 - Safeheron - _Desktop_
 - Talisman - _Desktop_
 - OneKey - _Desktop & Mobile_
+- Fordefi - _Desktop_
+- Ronin Wallet - _Desktop & Mobile_
+- Coin98 Wallet - _Desktop & Mobile_
+- SubWallet - _Desktop & Mobile_
+- Kayros - _Desktop_
 
 ## Build Environments
 
